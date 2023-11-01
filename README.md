@@ -28,6 +28,34 @@
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+## **Skill Set Used **
+
+- &#9733; Skill Set used
+     - &#9642; Python
+     - &#9642; NumPy
+     - &#9642; Seaborn
+     - &#9642; Azure
+     - &#9642; Matplotlib
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## **Deliverables **
+
+- &#9733; List of deliverables:
+     - &#9642; Final Report
+     - &#9642; Slide Show
+     - &#9642; Front end application Link
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## **Modeling **
+
+- &#9733; List of models:
+     - &#9642; Model1
+     - &#9642; Model2
+     - &#9642; Model3
+- &#9733; Best model:
+     - &#9642; Best Model
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## **The Plan**
 - &#9733; Acquire data from https://www.kaggle.com/datasets/rohitrox/healthcare-provider-fraud-detection-analysis?select=Train-1542865627584.csv
@@ -118,7 +146,7 @@
 
 ## Ordered List:
      1. Clone this repo.
-     2. Acquire the data from SQL DB.
+     2. Acquire the data from [kaggle](https://www.kaggle.com/datasets/rohitrox/healthcare-provider-fraud-detection-analysis?select=Train_Beneficiarydata-1542865627584.csv)
      3. Run data preprocessing and feature engineering scripts.
      4. Explore data using provided notebooks.
      5. Train and evaluate regression models using the provided notebook.
