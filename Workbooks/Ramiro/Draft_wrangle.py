@@ -21,3 +21,8 @@ def acquire_train_data():
     train_df = pd.read_csv('Train.csv')
     return train_outpatient_df, train_inpatient_df, train_beneficiary_df, train_df
 
+def DataFrame_shape(train, test, new_df):
+    test_train_count = len(train) + len(test)
+    print(f'Sum of both train and test -> {test_train_count}')
+    print(f'Sum of new DataFrame -> {len(new_df)}')
+
