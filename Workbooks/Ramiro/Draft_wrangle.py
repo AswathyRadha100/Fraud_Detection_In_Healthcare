@@ -17,12 +17,16 @@ def acquire_test_data():
     test_df = pd.read_csv('Test.csv')
     return test_outpatient_df, test_inpatient_df, test_beneficiary_df, test_df
 
+# ======================================================================================
+
 def acquire_train_data():
     train_outpatient_df = pd.read_csv('Train_Outpatientdata.csv')
     train_inpatient_df = pd.read_csv('Train_Inpatientdata.csv')
     train_beneficiary_df = pd.read_csv('Train_Beneficiarydata.csv')
     train_df = pd.read_csv('Train.csv')
     return train_outpatient_df, train_inpatient_df, train_beneficiary_df, train_df
+
+# ======================================================================================
 
 def DataFrame_shape(train, test, new_df):
     test_train_count = len(train) + len(test)
@@ -32,7 +36,7 @@ def DataFrame_shape(train, test, new_df):
 
 # ======================================================================================
 
-def beneficiary_label_encode(df):
+def beneficiary_lable_encode(df):
 	# make all columns lowercase 
     df.columns = df.columns.str.lower()
 
@@ -59,10 +63,11 @@ def beneficiary_OneHotLable_encode(df):
     encoder = OneHotEncoder(handle_unknown='ignore')
     encoder_df = pd.DataFrame(encoder.fit_transform(df[['race']]).toarray())
     df = df.join(encoder_df)
-    df = df.rename(columns={0: 'race_0'})
-    df = df.rename(columns={1: 'race_1'})
-    df = df.rename(columns={2: 'race_2'})
-    df = df.rename(columns={3: 'race_3'})
+   
+    columns_to_rename = {0: 'race_0', 1: 'race_1', 2: 'race_2', 3: 'race_3'}
+    for old_col, new_col in columns_to_rename.items():
+        df = df.rename(columns={old_col: new_col})
+        df[new_col] = df[new_col].astype(int)
     return df
 
 # ======================================================================================
@@ -82,3 +87,391 @@ def prep_beneficiary_data(df):
     df['dob_day'] = df['dob'].dt.day
     df = df.drop(['dob', 'dod'], axis=1)  # Assign the result back to the dataframe
     return df
+
+# ======================================================================================
+
+def wrangle_inpatient(df):
+    """
+    Preprocess the inpatient data by performing the following steps:
+    
+    1. Replace spaces in column names with underscores.
+    2. Convert column names to lowercase.
+    3. Impute null values in 'attendingphysician', 'operatingphysician', and 'otherphysician' with 'PHY000000'.
+    4. Impute null values in 'clmdiagnosiscode_1' to 'clmdiagnosiscode_10' with '00000'.
+    5. Impute null values in 'clmprocedurecode_1' to 'clmprocedurecode_3' with '000'.
+    6. Drop columns 'clmprocedurecode_4', 'clmprocedurecode_5', 'clmprocedurecode_6' due to a high percentage of null values.
+    7. Impute null values in 'deductibleamtpaid' with '1068'.
+
+    Args:
+    df (DataFrame): The inpatient dataframe to be preprocessed.
+
+    Returns:
+    DataFrame: The preprocessed inpatient dataframe.
+    """
+    df.columns = df.columns.str.replace(' ', '_')
+    df.columns = df.columns.str.lower()
+
+    # impute null values with PHY000000 for AttendingPhysician,OperatingPhysician,OtherPhysician 
+    df['attendingphysician'] = df['attendingphysician'].fillna('PHY000000')
+    df['operatingphysician'] = df['operatingphysician'].fillna('PHY000000')
+    df['otherphysician'] = df['otherphysician'].fillna('PHY000000')
+    
+    # impute null values with '00000' for ClmDiagnosisCode_1 to ClmDiagnosisCode_10 in loop
+    for i in range(1,11):
+        df[f'clmdiagnosiscode_{i}'] = df[f'clmdiagnosiscode_{i}'].fillna('00000')
+
+    
+    # impute null values with '000' for ClmProcedureCode_1 to ClmProcedureCode_6 in loop
+    for i in range(1,4):
+        df[f'clmprocedurecode_{i}'] = df[f'clmprocedurecode_{i}'].fillna('000')    
+
+
+
+    # drop columns ClmProcedureCode_4,ClmProcedureCode_5,ClmProcedureCode_6  as 99% of the values are null     
+    df = df.drop(['clmprocedurecode_4','clmprocedurecode_5','clmprocedurecode_6'], axis=1)
+
+    # impute null values with '1068' for DeductibleAmtPaid
+    df['deductibleamtpaid'] = df['deductibleamtpaid'].fillna(1068)
+
+    # rename columns clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 as clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 in the format clmprocedurecode_i_1 where i denotes inpatient
+    df = df.rename(columns={'clmprocedurecode_1':'clmprocedurecode_1','clmprocedurecode_2':'clmprocedurecode_2','clmprocedurecode_3':'clmprocedurecode_3'})
+    
+    cols_to_rename = ['claimid', 'claimstartdt', 'claimenddt', 'provider',
+       'inscclaimamtreimbursed', 'attendingphysician', 'operatingphysician',
+       'otherphysician', 'admissiondt', 'clmadmitdiagnosiscode',
+       'deductibleamtpaid', 'dischargedt', 'diagnosisgroupcode',
+       'clmdiagnosiscode_1', 'clmdiagnosiscode_2', 'clmdiagnosiscode_3',
+       'clmdiagnosiscode_4', 'clmdiagnosiscode_5', 'clmdiagnosiscode_6',
+       'clmdiagnosiscode_7', 'clmdiagnosiscode_8', 'clmdiagnosiscode_9',
+       'clmdiagnosiscode_10', 'clmprocedurecode_1', 'clmprocedurecode_2',
+       'clmprocedurecode_3', 'claimduration', 'numphysicians']
+
+    for col in cols_to_rename:
+        df.rename(columns={col: f'inpatient_{col}'}, inplace=True)
+    
+    return df
+
+# ======================================================================================
+
+
+def wrangle_outpatient(df):
+    """
+    Preprocess outpatient data by performing the following steps:
+    1. Replace spaces in column names with underscores.
+    2. Convert column names to lowercase.
+    3. Remove unnecessary columns ('clmdiagnosiscode_10', 'clmprocedurecode_1', ...).
+    4. Impute null values with 'PHY000000' for 'AttendingPhysician', 'OperatingPhysician', and 'OtherPhysician'.
+    5. Impute null values with '00000' for 'ClmDiagnosisCode_1' to 'ClmDiagnosisCode_9'.
+    6. Impute null values with '00000' for 'ClmAdmitDiagnosisCode' (as 79% of the values are null).
+
+    Args:
+    df (DataFrame): The outpatient dataframe to be processed.
+
+    Returns:
+    DataFrame: The preprocessed outpatient dataframe.
+    """
+    df.columns = df.columns.str.replace(' ', '_')
+    df.columns = df.columns.str.lower()
+
+    df = df.drop(['clmdiagnosiscode_10','clmprocedurecode_1','clmprocedurecode_2','clmprocedurecode_3','clmprocedurecode_4','clmprocedurecode_5','clmprocedurecode_6'], axis=1)
+
+    # impute null values with PHY000000 for AttendingPhysician,OperatingPhysician,OtherPhysician
+    df['attendingphysician'] = df['attendingphysician'].fillna('PHY000000')
+    df['operatingphysician'] = df['operatingphysician'].fillna('PHY000000')
+    df['otherphysician'] = df['otherphysician'].fillna('PHY000000')
+
+    # impute null values with '00000' from ClmDiagnosisCode_1 to ClmDiagnosisCode_9 in a  loop
+    for i in range(1,10):
+        df[f'clmdiagnosiscode_{i}'] = df[f'clmdiagnosiscode_{i}'].fillna('00000')
+
+
+    # ClmAdmitDiagnosisCode impute it with '00000' as 79% of the values are null
+    df['clmadmitdiagnosiscode'] = df['clmadmitdiagnosiscode'].fillna('00000')
+   # rename columns clmprocedurecode_1 to clmprocedurecode_6 as  in the format clmprocedurecode_i_1 where i denotes inpatient
+   # for i in range(1,7):
+   #     df = df.rename(columns={f'clmprocedurecode_{i}':f'clmprocedurecode_i_{i}'})
+    cols_to_rename = ['claimid', 'claimstartdt', 'claimenddt', 'provider',
+       'inscclaimamtreimbursed', 'attendingphysician', 'operatingphysician',
+       'otherphysician', 'clmdiagnosiscode_1', 'clmdiagnosiscode_2',
+       'clmdiagnosiscode_3', 'clmdiagnosiscode_4', 'clmdiagnosiscode_5',
+       'clmdiagnosiscode_6', 'clmdiagnosiscode_7', 'clmdiagnosiscode_8',
+       'clmdiagnosiscode_9', 'deductibleamtpaid', 'clmadmitdiagnosiscode',
+       'claimduration']
+
+    for col in cols_to_rename:
+        df.rename(columns={col: f'outpatient_{col}'}, inplace=True)
+    
+    return df
+
+# ======================================================================================
+
+def summarize_outliers(df, k=1.5) -> None:
+    '''
+    Summarize will take in a pandas DataFrame
+    and print summary statistics:
+    info
+    shape
+    outliers
+    description
+    missing data stats
+    
+    Args:
+    df (DataFrame): The DataFrame to be summarized.
+    k (float): The threshold for identifying outliers.
+    
+    return: None (prints to console)
+    '''
+    # print info on the df
+    print('Shape of Data: ')
+    print(df.shape)
+    print('======================\n======================')
+    print('Info: ')
+    print(df.info())
+    print('======================\n======================')
+    print('Descriptions:')
+    # print the description of the df, transpose, output markdown
+    #print(df.describe().T.to_markdown())
+    print('======================\n======================')
+    # lets do that for categorical info as well
+    # we will use select_dtypes to look at just Objects
+    print(df.select_dtypes('int64').describe().T.to_markdown())
+    print('======================\n======================')
+    print('missing values:')
+    print('by column:')
+    print(missing_by_col(df).to_markdown())
+    print('by row: ')
+    print(missing_by_row(df).to_markdown())
+    print('======================\n======================')
+    print('Outliers: ')
+    print(report_outliers(df, k=k))
+    print('======================\n======================')
+
+
+def missing_by_col(df):
+    """
+    Count the number of missing values by column in a DataFrame.
+
+    Args:
+    df (DataFrame): The DataFrame to analyze.
+
+    Returns:
+    Series: A Series with column names as the index and the count of missing values as values.
+    """
+    return df.isnull().sum(axis=0)
+
+def missing_by_row(df):
+    """
+    Generate a report on the number and percentage of rows with a certain number of missing columns.
+
+    Args:
+    df (DataFrame): The DataFrame to analyze.
+
+    Returns:
+    DataFrame: A DataFrame with columns 'num_cols_missing', 'percent_cols_missing', and 'num_rows'.
+    """
+    # get the number of missing elements by row (axis 1)
+    count_missing = df.isnull().sum(axis=1)
+
+    # get the ratio/percent of missing elements by row:
+    percent_missing = round((df.isnull().sum(axis=1) / df.shape[1]) * 100)
+
+    # make a df with those two series (same len as the original df)
+    # reset the index because we want to count both things
+    # under aggregation (because they will always be sononomous)
+    # use a count function to grab the similar rows
+    # print that dataframe as a report
+    rows_df = pd.DataFrame({
+    'num_cols_missing': count_missing,
+    'percent_cols_missing': percent_missing
+    }).reset_index()\
+    .groupby(['num_cols_missing', 'percent_cols_missing']).\
+    count().reset_index().rename(columns={'index':'num_rows'})
+    return rows_df
+
+def get_fences(df, col, k=1.5) -> tuple:
+    """
+    Calculate upper and lower fences for identifying outliers in a numeric column.
+
+    Args:
+    df (DataFrame): The DataFrame containing the column.
+    col (str): The name of the column to analyze.
+    k (float): The threshold multiplier for the IQR.
+
+    Returns:
+    float: Lower bound for outliers.
+    float: Upper bound for outliers.
+    """
+    q3 = df[col].quantile(0.75)
+    q1 = df[col].quantile(0.25)
+    iqr = q3 - q1
+    upper_bound = q3 + (k * iqr)
+    lower_bound = q1 - (k * iqr)
+    return lower_bound, upper_bound
+
+def report_outliers(df, k=1.5) -> None:
+    """
+    Report outliers in numeric columns of a DataFrame based on the specified threshold.
+
+    Args:
+    df (DataFrame): The DataFrame to analyze.
+    k (float): The threshold for identifying outliers.
+
+    Returns:
+    None
+    """
+    num_df = df.select_dtypes('number')
+    for col in num_df:
+        if len(num_df[col].value_counts()) > 20:
+            lower_bound, upper_bound = get_fences(df,col, k=k)
+            print(f'Outliers for Col {col}:')
+            print('lower: ', lower_bound, 'upper: ', upper_bound)
+            print(df[col][(
+                df[col] > upper_bound) | (df[col] < lower_bound)])
+            print('----------')
+            
+def get_continuous_feats(df) -> list:
+    """
+    Find continuous numerical features in a DataFrame.
+
+    Args:
+    df (DataFrame): The DataFrame to analyze.
+
+    Returns:
+    list: List of column names containing continuous numerical features.
+    """
+    num_cols = []
+    num_df = df.select_dtypes('number')
+    for col in num_df:
+        if num_df[col].nunique() > 20:
+            num_cols.append(col)
+    return num_cols
+
+# ======================================================================================
+
+def split_data(df, target=None) -> tuple:
+    """
+    Split a DataFrame into training, validation, and test sets with optional stratification.
+
+    Args:
+    df (DataFrame): The DataFrame to split.
+    target (Series): Optional target variable for stratified splitting.
+
+    Returns:
+    train (DataFrame): Training data.
+    validate (DataFrame): Validation data.
+    test (DataFrame): Test data.
+    """
+    train_val, test = train_test_split(
+        df,
+        train_size=0.8,
+        random_state=1349,
+        stratify=target)
+    train, validate = train_test_split(
+        train_val,
+        train_size=0.7,
+        random_state=1349,
+        stratify=target)
+    return train, validate, test
+
+# ======================================================================================
+
+def display_numeric_column_histograms(data_frame):
+    """
+    Display histograms for numeric columns in a DataFrame with three colors.
+
+    Args:
+    data_frame (DataFrame): The DataFrame to visualize.
+
+    Returns:
+    None(prints to console)
+    """
+    numeric_columns = data_frame.select_dtypes(exclude=["object", "category"]).columns.to_list()
+    # Define any number of colors for the histogram bars
+    colors = ["#FFBF00"]
+    for i, column in enumerate(numeric_columns):
+        # Create a histogram for each numeric column with two colors
+        figure, axis = plt.subplots(figsize=(10, 3))
+        sns.histplot(data_frame, x=column, ax=axis, color=colors[i % len(colors)])
+        axis.set_title(f"Histogram of {column}")
+        plt.show()
+
+# ======================================================================================
+
+
+# function to create a new feature for inpatient dataframes
+def create_features_inpatient(df):
+    """
+    Create new features for inpatient dataframes, including the following:
+    
+    1. Convert date columns to datetime objects: 'inpatient_claimstartdt' and 'claimenddt'.
+    2. Calculate the claim duration in days.
+    3. Create a new feature 'NumPhysicians' by counting non-null values in physician-related columns.
+    4. Change the dtype of date columns: 'inpatient_claimstartdt', 'claimenddt', 'admissiondt', 'dischargedt' to 'datetime64'.
+
+    Args:
+    df (DataFrame): The inpatient dataframe to which features will be added.
+
+    Returns:
+    DataFrame: The inpatient dataframe with the new features.
+    """
+    # Convert the date columns to datetime objects
+    df['inpatient_claimstartdt'] = pd.to_datetime(df['inpatient_claimstartdt'])
+    df['inpatient_claimenddt'] = pd.to_datetime(df['inpatient_claimenddt'])
+
+    # Calculate the Claim Duration
+    df['inpatient_claimduration'] = (df['inpatient_claimenddt'] - df['inpatient_claimstartdt']).dt.days
+    
+    # Create a new feature "NumPhysicians" by counting non-null values in the relevant columns
+    df['inpatient_numphysicians'] = df[['inpatient_attendingphysician', 'inpatient_operatingphysician', 'inpatient_otherphysician']].count(axis=1)
+
+    # change the dtype of "claimstartdt" ,"claimenddt","admissiondt","dischargedt" to "datetime64"
+    df['inpatient_claimstartdt'] = pd.to_datetime(df['inpatient_claimstartdt'])
+    df['inpatient_claimenddt'] = pd.to_datetime(df['inpatient_claimenddt'])
+    df['inpatient_admissiondt'] = pd.to_datetime(df['inpatient_admissiondt'])
+    df['inpatient_dischargedt'] = pd.to_datetime(df['inpatient_dischargedt'])
+    return df
+
+# ======================================================================================
+
+# function to create a new feature for outpatient dataframes
+def create_features_outpatient(df):
+    """
+    Create new features for outpatient dataframes, including the following:
+    
+    1. Convert date columns to datetime objects: 'outpatient_claimstartdt' and 'claimenddt'.
+    2. Calculate the claim duration in days.
+
+    Args:
+    df (DataFrame): The outpatient dataframe to which features will be added.
+
+    Returns:
+    DataFrame: The outpatient dataframe with the new features.
+    """
+    # Convert the date columns to datetime objects
+    df['outpatient_claimstartdt'] = pd.to_datetime(df['outpatient_claimstartdt'])
+    df['outpatient_claimenddt'] = pd.to_datetime(df['outpatient_claimenddt'])
+    # Calculate the Claim Duration
+    df['outpatient_claimduration'] = (df['outpatient_claimenddt'] - df['outpatient_claimstartdt']).dt.days
+    return df
+
+# ======================================================================================
+
+# function to create a new feature "ChronicDiseaseCount" from the "ChronicCond" features for beneficiary dataframe
+def create_chronic_disease_count_feature_beneficiary(df):
+    """
+    Create a new feature "ChronicDiseaseCount" for beneficiary dataframes by counting the number of "1" values (which means "yes") in the relevant columns.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to which the feature will be added.
+
+    Returns:
+    DataFrame: The beneficiary dataframe with the new "ChronicDiseaseCount" feature.
+    """
+    # Create a new feature "ChronicDiseaseCount" by counting the number of "1" values(which means "yes") in the relevant columns
+    df['chronicdiseasecount'] = df[['chroniccond_alzheimer', 'chroniccond_heartfailure', 'chroniccond_kidneydisease', 'chroniccond_cancer', 'chroniccond_obstrpulmonary', 'chroniccond_depression', 'chroniccond_diabetes', 'chroniccond_ischemicheart', 'chroniccond_osteoporasis', 'chroniccond_rheumatoidarthritis', 'chroniccond_stroke']].apply(lambda row: row.str.contains('1').sum(), axis=1)
+    return df
+
+# ======================================================================================
+
+
+# ======================================================================================
