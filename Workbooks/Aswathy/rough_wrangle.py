@@ -8,6 +8,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 def acquire_test_data():
+    """
+    Load test datasets including outpatient, inpatient, beneficiary, and main test data.
+
+    Returns:
+    tuple: A tuple containing test_outpatient_df, test_inpatient_df, test_beneficiary_df, and test_df dataframes.
+    """
+
     test_outpatient_df = pd.read_csv('Test_Outpatientdata.csv')
     test_inpatient_df = pd.read_csv('Test_Inpatientdata.csv')
     test_beneficiary_df = pd.read_csv('Test_Beneficiarydata.csv')
@@ -15,6 +22,12 @@ def acquire_test_data():
     return test_outpatient_df, test_inpatient_df, test_beneficiary_df, test_df
 
 def acquire_train_data():
+    """
+    Load train datasets including outpatient, inpatient, beneficiary, and main train data.
+
+    Returns:
+    tuple: A tuple containing train_outpatient_df, train_inpatient_df, train_beneficiary_df, and train_df dataframes.
+    """
     train_outpatient_df = pd.read_csv('Train_Outpatientdata.csv')
     train_inpatient_df = pd.read_csv('Train_Inpatientdata.csv')
     train_beneficiary_df = pd.read_csv('Train_Beneficiarydata.csv')
@@ -23,14 +36,145 @@ def acquire_train_data():
 
 
 def DataFrame_shape(train, test, new_df):
+    """
+    Calculate and print the number of rows in train, test, and a new dataframe.
+
+    Args:
+    train (DataFrame): The training dataframe.
+    test (DataFrame): The test dataframe.
+    new_df (DataFrame): The new dataframe to compare.
+
+    Returns:
+    None
+    """
     test_train_count = len(train) + len(test)
     print(f'Sum of both train and test -> {test_train_count}')
     print(f'Sum of new DataFrame -> {len(new_df)}')
 
+# ======================================================================================
 
+
+def beneficiary_label_encode(df):
+    """
+    Apply label encoding to selected columns in the beneficiary dataframe.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to be label encoded.
+
+    Returns:
+    DataFrame: The dataframe with label encoded columns.
+    """
+    # Make all columns lowercase
+    df.columns = df.columns.str.lower()
+
+    # List of columns for label encoding
+    col_list = ['gender', 'race', 'renaldiseaseindicator',
+                'chroniccond_alzheimer', 'chroniccond_heartfailure',
+                'chroniccond_kidneydisease', 'chroniccond_cancer',
+                'chroniccond_obstrpulmonary', 'chroniccond_depression',
+                'chroniccond_diabetes', 'chroniccond_ischemicheart',
+                'chroniccond_osteoporasis', 'chroniccond_rheumatoidarthritis',
+                'chroniccond_stroke']
+
+    # Label encode each column one by one
+    for col in col_list:
+        label_encoder = LabelEncoder()
+        df[col] = label_encoder.fit_transform(df[col])
+
+    return df
+
+        
+
+# ======================================================================================
+
+def beneficiary_OneHotLabel_encode(df):
+    """
+    Apply one-hot encoding to the 'race' column in the beneficiary dataframe.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to be encoded.
+
+    Returns:
+    DataFrame: The dataframe with one-hot encoded 'race' column.
+    """
+    # Convert column names to lowercase
+    df.columns = df.columns.str.lower()
+
+    # Initialize a OneHotEncoder
+    encoder = OneHotEncoder(handle_unknown='ignore')
+
+    # Encode the 'race' column and create a new dataframe with one-hot encoded values
+    encoder_df = pd.DataFrame(encoder.fit_transform(df[['race']]).toarray())
+
+    # Join the one-hot encoded dataframe with the original dataframe
+    df = df.join(encoder_df)
+
+    # Rename the one-hot encoded columns for clarity
+    df = df.rename(columns={0: 'race_0'})
+    df = df.rename(columns={1: 'race_1'})
+    df = df.rename(columns={2: 'race_2'})
+    df = df.rename(columns={3: 'race_3'})
+
+    return df
+
+
+# ======================================================================================
+
+def prep_beneficiary_data(df):
+    """
+    Preprocess the beneficiary data by performing the following steps:
+    
+    1. Convert column names to lowercase.
+    2. Convert 'dod' and 'dob' columns to datetime objects.
+    3. Create a 'deceased' column indicating whether the beneficiary is deceased (1) or not (0).
+    4. Calculate the age of the beneficiary at a reference date.
+    5. Calculate the total reimbursed amount as the sum of inpatient and outpatient annual reimbursement amounts.
+    6. Calculate the total deductible amount as the sum of inpatient annual deductible amount and outpatient annual reimbursement amount.
+    7. Create new features 'dob_year', 'dob_month', and 'dob_day' based on the 'dob' column.
+    8. Drop the 'dob' and 'dod' columns.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to be preprocessed.
+
+    Returns:
+    DataFrame: The preprocessed beneficiary dataframe.
+    """
+    df.columns = df.columns.str.lower()
+    df['dod'] = pd.to_datetime(df['dod'])
+    df['dob'] = pd.to_datetime(df['dob'])
+    df['deceased'] = np.where((df['dod'].replace(np.nan, 'rep') == 'rep'), 0, 1)
+    df['age'] = round(((df['dod'] - df['dob']).dt.days) / 365)
+    df['age'] = df['age'].fillna(((pd.to_datetime('2009-12-01', format='%Y-%m-%d') - df['dob']).dt.days) / 365)
+    df['age'] = df['age'].astype(int)
+    df['total_reimbursed_amt'] = df['ipannualreimbursementamt'] + df['opannualreimbursementamt']
+    df['total_deductible_amt'] = df['ipannualdeductibleamt'] + df['opannualreimbursementamt']
+    df['dob_year'] = df['dob'].dt.year
+    df['dob_month'] = df['dob'].dt.month
+    df['dob_day'] = df['dob'].dt.day
+    df = df.drop(['dob', 'dod'], axis=1)  # Assign the result back to the dataframe
+    return df
+
+# ======================================================================================
 
 
 def wrangle_inpatient(df):
+    """
+    Preprocess the inpatient data by performing the following steps:
+    
+    1. Replace spaces in column names with underscores.
+    2. Convert column names to lowercase.
+    3. Impute null values in 'attendingphysician', 'operatingphysician', and 'otherphysician' with 'PHY000000'.
+    4. Impute null values in 'clmdiagnosiscode_1' to 'clmdiagnosiscode_10' with '00000'.
+    5. Impute null values in 'clmprocedurecode_1' to 'clmprocedurecode_3' with '000'.
+    6. Drop columns 'clmprocedurecode_4', 'clmprocedurecode_5', 'clmprocedurecode_6' due to a high percentage of null values.
+    7. Impute null values in 'deductibleamtpaid' with '1068'.
+
+    Args:
+    df (DataFrame): The inpatient dataframe to be preprocessed.
+
+    Returns:
+    DataFrame: The preprocessed inpatient dataframe.
+    """
     df.columns = df.columns.str.replace(' ', '_')
     df.columns = df.columns.str.lower()
 
@@ -63,9 +207,25 @@ def wrangle_inpatient(df):
     df['deductibleamtpaid'] = df['deductibleamtpaid'].fillna(1068)
     return df
 
+# ======================================================================================
 
 
 def wrangle_outpatient(df):
+    """
+    Preprocess outpatient data by performing the following steps:
+    1. Replace spaces in column names with underscores.
+    2. Convert column names to lowercase.
+    3. Remove unnecessary columns ('clmdiagnosiscode_10', 'clmprocedurecode_1', ...).
+    4. Impute null values with 'PHY000000' for 'AttendingPhysician', 'OperatingPhysician', and 'OtherPhysician'.
+    5. Impute null values with '00000' for 'ClmDiagnosisCode_1' to 'ClmDiagnosisCode_9'.
+    6. Impute null values with '00000' for 'ClmAdmitDiagnosisCode' (as 79% of the values are null).
+
+    Args:
+    df (DataFrame): The outpatient dataframe to be processed.
+
+    Returns:
+    DataFrame: The preprocessed outpatient dataframe.
+    """
     df.columns = df.columns.str.replace(' ', '_')
     df.columns = df.columns.str.lower()
 
@@ -84,7 +244,9 @@ def wrangle_outpatient(df):
     # ClmAdmitDiagnosisCode impute it with '00000' as 79% of the values are null
     df['clmadmitdiagnosiscode'] = df['clmadmitdiagnosiscode'].fillna('00000')
     return df
-#____________________________________________________________________
+
+# ======================================================================================
+
 def summarize_outliers(df, k=1.5) -> None:
     '''
     Summarize will take in a pandas DataFrame
@@ -125,8 +287,6 @@ def summarize_outliers(df, k=1.5) -> None:
     print('Outliers: ')
     print(report_outliers(df, k=k))
     print('======================\n======================')
-    # _____________________________________________________________
-
 
 
 def missing_by_col(df):
@@ -140,6 +300,7 @@ def missing_by_col(df):
     Series: A Series with column names as the index and the count of missing values as values.
     """
     return df.isnull().sum(axis=0)
+
 def missing_by_row(df):
     """
     Generate a report on the number and percentage of rows with a certain number of missing columns.
@@ -152,8 +313,10 @@ def missing_by_row(df):
     """
     # get the number of missing elements by row (axis 1)
     count_missing = df.isnull().sum(axis=1)
+
     # get the ratio/percent of missing elements by row:
     percent_missing = round((df.isnull().sum(axis=1) / df.shape[1]) * 100)
+
     # make a df with those two series (same len as the original df)
     # reset the index because we want to count both things
     # under aggregation (because they will always be sononomous)
@@ -166,6 +329,7 @@ def missing_by_row(df):
     .groupby(['num_cols_missing', 'percent_cols_missing']).\
     count().reset_index().rename(columns={'index':'num_rows'})
     return rows_df
+
 def get_fences(df, col, k=1.5) -> tuple:
     """
     Calculate upper and lower fences for identifying outliers in a numeric column.
@@ -185,6 +349,7 @@ def get_fences(df, col, k=1.5) -> tuple:
     upper_bound = q3 + (k * iqr)
     lower_bound = q1 - (k * iqr)
     return lower_bound, upper_bound
+
 def report_outliers(df, k=1.5) -> None:
     """
     Report outliers in numeric columns of a DataFrame based on the specified threshold.
@@ -205,6 +370,7 @@ def report_outliers(df, k=1.5) -> None:
             print(df[col][(
                 df[col] > upper_bound) | (df[col] < lower_bound)])
             print('----------')
+            
 def get_continuous_feats(df) -> list:
     """
     Find continuous numerical features in a DataFrame.
@@ -221,6 +387,9 @@ def get_continuous_feats(df) -> list:
         if num_df[col].nunique() > 20:
             num_cols.append(col)
     return num_cols
+
+# ======================================================================================
+
 def split_data(df, target=None) -> tuple:
     """
     Split a DataFrame into training, validation, and test sets with optional stratification.
@@ -245,6 +414,9 @@ def split_data(df, target=None) -> tuple:
         random_state=1349,
         stratify=target)
     return train, validate, test
+
+# ======================================================================================
+
 def display_numeric_column_histograms(data_frame):
     """
     Display histograms for numeric columns in a DataFrame with three colors.
@@ -265,10 +437,25 @@ def display_numeric_column_histograms(data_frame):
         axis.set_title(f"Histogram of {column}")
         plt.show()
 
+# ======================================================================================
 
 
 # function to create a new feature for inpatient dataframes
 def create_features_inpatient(df):
+    """
+    Create new features for inpatient dataframes, including the following:
+    
+    1. Convert date columns to datetime objects: 'claimstartdt' and 'claimenddt'.
+    2. Calculate the claim duration in days.
+    3. Create a new feature 'NumPhysicians' by counting non-null values in physician-related columns.
+    4. Change the dtype of date columns: 'claimstartdt', 'claimenddt', 'admissiondt', 'dischargedt' to 'datetime64'.
+
+    Args:
+    df (DataFrame): The inpatient dataframe to which features will be added.
+
+    Returns:
+    DataFrame: The inpatient dataframe with the new features.
+    """
     # Convert the date columns to datetime objects
     df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
     df['claimenddt'] = pd.to_datetime(df['claimenddt'])
@@ -278,30 +465,55 @@ def create_features_inpatient(df):
     
     # Create a new feature "NumPhysicians" by counting non-null values in the relevant columns
     df['numphysicians'] = df[['attendingphysician', 'operatingphysician', 'otherphysician']].count(axis=1)
-    
+
     # change the dtype of "claimstartdt" ,"claimenddt","admissiondt","dischargedt" to "datetime64"
     df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
     df['claimenddt'] = pd.to_datetime(df['claimenddt'])
     df['admissiondt'] = pd.to_datetime(df['admissiondt'])
     df['dischargedt'] = pd.to_datetime(df['dischargedt'])
-
     return df
 
+# ======================================================================================
 
+# function to create a new feature for outpatient dataframes
 def create_features_outpatient(df):
+    """
+    Create new features for outpatient dataframes, including the following:
+    
+    1. Convert date columns to datetime objects: 'claimstartdt' and 'claimenddt'.
+    2. Calculate the claim duration in days.
+
+    Args:
+    df (DataFrame): The outpatient dataframe to which features will be added.
+
+    Returns:
+    DataFrame: The outpatient dataframe with the new features.
+    """
     # Convert the date columns to datetime objects
     df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
     df['claimenddt'] = pd.to_datetime(df['claimenddt'])
     # Calculate the Claim Duration
     df['claimduration'] = (df['claimenddt'] - df['claimstartdt']).dt.days
-   
     return df
 
-
+# ======================================================================================
 
 # function to create a new feature "ChronicDiseaseCount" from the "ChronicCond" features for beneficiary dataframe
 def create_chronic_disease_count_feature_beneficiary(df):
+    """
+    Create a new feature "ChronicDiseaseCount" for beneficiary dataframes by counting the number of "1" values (which means "yes") in the relevant columns.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to which the feature will be added.
+
+    Returns:
+    DataFrame: The beneficiary dataframe with the new "ChronicDiseaseCount" feature.
+    """
     # Create a new feature "ChronicDiseaseCount" by counting the number of "1" values(which means "yes") in the relevant columns
     df['chronicdiseasecount'] = df[['chroniccond_alzheimer', 'chroniccond_heartfailure', 'chroniccond_kidneydisease', 'chroniccond_cancer', 'chroniccond_obstrpulmonary', 'chroniccond_depression', 'chroniccond_diabetes', 'chroniccond_ischemicheart', 'chroniccond_osteoporasis', 'chroniccond_rheumatoidarthritis', 'chroniccond_stroke']].apply(lambda row: row.str.contains('1').sum(), axis=1)
     return df
 
+# ======================================================================================
+
+
+# ======================================================================================
