@@ -182,29 +182,30 @@ def wrangle_inpatient(df):
     df['attendingphysician'] = df['attendingphysician'].fillna('PHY000000')
     df['operatingphysician'] = df['operatingphysician'].fillna('PHY000000')
     df['otherphysician'] = df['otherphysician'].fillna('PHY000000')
+    
+    # impute null values with '00000' for ClmDiagnosisCode_1 to ClmDiagnosisCode_10 in loop
+    for i in range(1,11):
+        df[f'clmdiagnosiscode_{i}'] = df[f'clmdiagnosiscode_{i}'].fillna('00000')
 
-    # impute null values with '00000' for ClmDiagnosisCode_1 to ClmDiagnosisCode_10
-    df['clmdiagnosiscode_1'] = df['clmdiagnosiscode_1'].fillna('00000')
-    df['clmdiagnosiscode_2'] = df['clmdiagnosiscode_2'].fillna('00000')
-    df['clmdiagnosiscode_3'] = df['clmdiagnosiscode_3'].fillna('00000')
-    df['clmdiagnosiscode_4'] = df['clmdiagnosiscode_4'].fillna('00000')
-    df['clmdiagnosiscode_5'] = df['clmdiagnosiscode_5'].fillna('00000')
-    df['clmdiagnosiscode_6'] = df['clmdiagnosiscode_6'].fillna('00000')    
-    df['clmdiagnosiscode_7'] = df['clmdiagnosiscode_7'].fillna('00000')
-    df['clmdiagnosiscode_8'] = df['clmdiagnosiscode_8'].fillna('00000')
-    df['clmdiagnosiscode_9'] = df['clmdiagnosiscode_9'].fillna('00000')
-    df['clmdiagnosiscode_10'] = df['clmdiagnosiscode_10'].fillna('00000')
+    
+    # impute null values with '000' for ClmProcedureCode_1 to ClmProcedureCode_6 in loop
+    for i in range(1,4):
+        df[f'clmprocedurecode_{i}'] = df[f'clmprocedurecode_{i}'].fillna('000')    
 
-    # impute null values with '000' for ClmProcedureCode_1 to ClmProcedureCode_6
-    df['clmprocedurecode_1'] = df['clmprocedurecode_1'].fillna('000')
-    df['clmprocedurecode_2'] = df['clmprocedurecode_2'].fillna('000')
-    df['clmprocedurecode_3'] = df['clmprocedurecode_3'].fillna('000')
+
 
     # drop columns ClmProcedureCode_4,ClmProcedureCode_5,ClmProcedureCode_6  as 99% of the values are null     
     df = df.drop(['clmprocedurecode_4','clmprocedurecode_5','clmprocedurecode_6'], axis=1)
 
     # impute null values with '1068' for DeductibleAmtPaid
     df['deductibleamtpaid'] = df['deductibleamtpaid'].fillna(1068)
+
+    # rename columns clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 as clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 in the format clmprocedurecode_i_1 where i denotes inpatient
+    df = df.rename(columns={'clmprocedurecode_1':'clmprocedurecode_i_1','clmprocedurecode_2':'clmprocedurecode_i_2','clmprocedurecode_3':'clmprocedurecode_i_3'})
+
+    # rename columns clmdiagnosiscode_1 to clmdiagnosiscode_10 in the format clmdiagnosiscode_i_1 where i denotes inpatient
+    for i in range(1,11):
+        df = df.rename(columns={f'clmdiagnosiscode_{i}':f'clmdiagnosiscode_i_{i}'})
     return df
 
 # ======================================================================================
@@ -243,7 +244,15 @@ def wrangle_outpatient(df):
 
     # ClmAdmitDiagnosisCode impute it with '00000' as 79% of the values are null
     df['clmadmitdiagnosiscode'] = df['clmadmitdiagnosiscode'].fillna('00000')
+   # rename columns clmprocedurecode_1 to clmprocedurecode_6 as  in the format clmprocedurecode_i_1 where i denotes inpatient
+   # for i in range(1,7):
+   #     df = df.rename(columns={f'clmprocedurecode_{i}':f'clmprocedurecode_i_{i}'})
+
+    # rename columns clmdiagnosiscode_1 to clmdiagnosiscode_6 in the format clmdiagnosiscode_i_1 where i denotes inpatient
+    for i in range(1,7):
+        df = df.rename(columns={f'clmdiagnosiscode_{i}':f'clmdiagnosiscode_i_{i}'})
     return df
+
 
 # ======================================================================================
 
@@ -370,7 +379,7 @@ def report_outliers(df, k=1.5) -> None:
             print(df[col][(
                 df[col] > upper_bound) | (df[col] < lower_bound)])
             print('----------')
-            
+
 def get_continuous_feats(df) -> list:
     """
     Find continuous numerical features in a DataFrame.
