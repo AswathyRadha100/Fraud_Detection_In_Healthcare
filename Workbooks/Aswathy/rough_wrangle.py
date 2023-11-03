@@ -76,16 +76,10 @@ def wrangle_outpatient(df):
     df['operatingphysician'] = df['operatingphysician'].fillna('PHY000000')
     df['otherphysician'] = df['otherphysician'].fillna('PHY000000')
 
-    # impute null values with '00000' for ClmDiagnosisCode_1 to ClmDiagnosisCode_9
-    df['clmdiagnosiscode_1'] = df['clmdiagnosiscode_1'].fillna('00000')
-    df['clmdiagnosiscode_2'] = df['clmdiagnosiscode_2'].fillna('00000')
-    df['clmdiagnosiscode_3'] = df['clmdiagnosiscode_3'].fillna('00000')
-    df['clmdiagnosiscode_4'] = df['clmdiagnosiscode_4'].fillna('00000')
-    df['clmdiagnosiscode_5'] = df['clmdiagnosiscode_5'].fillna('00000')
-    df['clmdiagnosiscode_6'] = df['clmdiagnosiscode_6'].fillna('00000')
-    df['clmdiagnosiscode_7'] = df['clmdiagnosiscode_7'].fillna('00000')
-    df['clmdiagnosiscode_8'] = df['clmdiagnosiscode_8'].fillna('00000')
-    df['clmdiagnosiscode_9'] = df['clmdiagnosiscode_9'].fillna('00000')
+    # impute null values with '00000' from ClmDiagnosisCode_1 to ClmDiagnosisCode_9 in a  loop
+    for i in range(1,10):
+        df[f'clmdiagnosiscode_{i}'] = df[f'clmdiagnosiscode_{i}'].fillna('00000')
+
 
     # ClmAdmitDiagnosisCode impute it with '00000' as 79% of the values are null
     df['clmadmitdiagnosiscode'] = df['clmadmitdiagnosiscode'].fillna('00000')
@@ -271,7 +265,43 @@ def display_numeric_column_histograms(data_frame):
         axis.set_title(f"Histogram of {column}")
         plt.show()
 
-# -
 
 
+# function to create a new feature for inpatient dataframes
+def create_features_inpatient(df):
+    # Convert the date columns to datetime objects
+    df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
+    df['claimenddt'] = pd.to_datetime(df['claimenddt'])
+
+    # Calculate the Claim Duration
+    df['claimduration'] = (df['claimenddt'] - df['claimstartdt']).dt.days
+    
+    # Create a new feature "NumPhysicians" by counting non-null values in the relevant columns
+    df['numphysicians'] = df[['attendingphysician', 'operatingphysician', 'otherphysician']].count(axis=1)
+    
+    # change the dtype of "claimstartdt" ,"claimenddt","admissiondt","dischargedt" to "datetime64"
+    df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
+    df['claimenddt'] = pd.to_datetime(df['claimenddt'])
+    df['admissiondt'] = pd.to_datetime(df['admissiondt'])
+    df['dischargedt'] = pd.to_datetime(df['dischargedt'])
+
+    return df
+
+
+def create_features_outpatient(df):
+    # Convert the date columns to datetime objects
+    df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
+    df['claimenddt'] = pd.to_datetime(df['claimenddt'])
+    # Calculate the Claim Duration
+    df['claimduration'] = (df['claimenddt'] - df['claimstartdt']).dt.days
+   
+    return df
+
+
+
+# function to create a new feature "ChronicDiseaseCount" from the "ChronicCond" features for beneficiary dataframe
+def create_chronic_disease_count_feature_beneficiary(df):
+    # Create a new feature "ChronicDiseaseCount" by counting the number of "1" values(which means "yes") in the relevant columns
+    df['chronicdiseasecount'] = df[['chroniccond_alzheimer', 'chroniccond_heartfailure', 'chroniccond_kidneydisease', 'chroniccond_cancer', 'chroniccond_obstrpulmonary', 'chroniccond_depression', 'chroniccond_diabetes', 'chroniccond_ischemicheart', 'chroniccond_osteoporasis', 'chroniccond_rheumatoidarthritis', 'chroniccond_stroke']].apply(lambda row: row.str.contains('1').sum(), axis=1)
+    return df
 
