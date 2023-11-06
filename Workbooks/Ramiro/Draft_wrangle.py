@@ -451,15 +451,17 @@ def create_chronic_disease_count_feature_beneficiary(df):
 # ======================================================================================
 
 def merge_inpatient_fraud(beneficiary, inpatient, fraud):
-    df = pd.merge(beneficiary, inpatient, on='beneid')
-    df = pd.merge(inpatient, fraud, on='provider')
+    df = beneficiary.join(inpatient.set_index('beneid'), on='beneid', how='left')
+    df = df.join(fraud.set_index('provider'), on='provider', how='left')
     df = df.dropna(subset=['potentialfraud'])
-    return df 
+    df.reset_index(inplace = True, drop = True)
+    return df
 
 # ======================================================================================
 
 def merge_outpatient_fraud(beneficiary, outpatient, fraud):
-    df = pd.merge(beneficiary, outpatient, on='beneid')
-    df = pd.merge(outpatient, fraud, on='provider')
+    df = beneficiary.join(outpatient.set_index('beneid'), on='beneid', how='left')
+    df = df.join(fraud.set_index('provider'), on='provider', how='left')
     df = df.dropna(subset=['potentialfraud'])
+    df.reset_index(inplace = True, drop = True)
     return df 
