@@ -36,7 +36,7 @@ def DataFrame_shape(train, test, new_df):
 
 # ======================================================================================
 
-def beneficiary_lable_encode(df):
+def beneficiary_label_encode(df):
 	# make all columns lowercase 
     df.columns = df.columns.str.lower()
 
@@ -58,7 +58,7 @@ def beneficiary_lable_encode(df):
 
 # ======================================================================================
 
-def beneficiary_OneHotLable_encode(df): 
+def beneficiary_OneHotLabel_encode(df): 
     df.columns = df.columns.str.lower()
     encoder = OneHotEncoder(handle_unknown='ignore')
     encoder_df = pd.DataFrame(encoder.fit_transform(df[['race']]).toarray())
@@ -135,20 +135,7 @@ def wrangle_inpatient(df):
 
     # rename columns clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 as clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 in the format clmprocedurecode_i_1 where i denotes inpatient
     df = df.rename(columns={'clmprocedurecode_1':'clmprocedurecode_1','clmprocedurecode_2':'clmprocedurecode_2','clmprocedurecode_3':'clmprocedurecode_3'})
-    
-    cols_to_rename = ['claimid', 'claimstartdt', 'claimenddt', 'provider',
-       'inscclaimamtreimbursed', 'attendingphysician', 'operatingphysician',
-       'otherphysician', 'admissiondt', 'clmadmitdiagnosiscode',
-       'deductibleamtpaid', 'dischargedt', 'diagnosisgroupcode',
-       'clmdiagnosiscode_1', 'clmdiagnosiscode_2', 'clmdiagnosiscode_3',
-       'clmdiagnosiscode_4', 'clmdiagnosiscode_5', 'clmdiagnosiscode_6',
-       'clmdiagnosiscode_7', 'clmdiagnosiscode_8', 'clmdiagnosiscode_9',
-       'clmdiagnosiscode_10', 'clmprocedurecode_1', 'clmprocedurecode_2',
-       'clmprocedurecode_3', 'claimduration', 'numphysicians']
-
-    for col in cols_to_rename:
-        df.rename(columns={col: f'inpatient_{col}'}, inplace=True)
-    
+  
     return df
 
 # ======================================================================================
@@ -190,16 +177,6 @@ def wrangle_outpatient(df):
    # rename columns clmprocedurecode_1 to clmprocedurecode_6 as  in the format clmprocedurecode_i_1 where i denotes inpatient
    # for i in range(1,7):
    #     df = df.rename(columns={f'clmprocedurecode_{i}':f'clmprocedurecode_i_{i}'})
-    cols_to_rename = ['claimid', 'claimstartdt', 'claimenddt', 'provider',
-       'inscclaimamtreimbursed', 'attendingphysician', 'operatingphysician',
-       'otherphysician', 'clmdiagnosiscode_1', 'clmdiagnosiscode_2',
-       'clmdiagnosiscode_3', 'clmdiagnosiscode_4', 'clmdiagnosiscode_5',
-       'clmdiagnosiscode_6', 'clmdiagnosiscode_7', 'clmdiagnosiscode_8',
-       'clmdiagnosiscode_9', 'deductibleamtpaid', 'clmadmitdiagnosiscode',
-       'claimduration']
-
-    for col in cols_to_rename:
-        df.rename(columns={col: f'outpatient_{col}'}, inplace=True)
     
     return df
 
@@ -415,20 +392,20 @@ def create_features_inpatient(df):
     DataFrame: The inpatient dataframe with the new features.
     """
     # Convert the date columns to datetime objects
-    df['inpatient_claimstartdt'] = pd.to_datetime(df['inpatient_claimstartdt'])
-    df['inpatient_claimenddt'] = pd.to_datetime(df['inpatient_claimenddt'])
+    df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
+    df['claimenddt'] = pd.to_datetime(df['claimenddt'])
 
     # Calculate the Claim Duration
-    df['inpatient_claimduration'] = (df['inpatient_claimenddt'] - df['inpatient_claimstartdt']).dt.days
+    df['claimduration'] = (df['claimenddt'] - df['claimstartdt']).dt.days
     
     # Create a new feature "NumPhysicians" by counting non-null values in the relevant columns
-    df['inpatient_numphysicians'] = df[['inpatient_attendingphysician', 'inpatient_operatingphysician', 'inpatient_otherphysician']].count(axis=1)
+    df['numphysicians'] = df[['attendingphysician', 'operatingphysician', 'otherphysician']].count(axis=1)
 
     # change the dtype of "claimstartdt" ,"claimenddt","admissiondt","dischargedt" to "datetime64"
-    df['inpatient_claimstartdt'] = pd.to_datetime(df['inpatient_claimstartdt'])
-    df['inpatient_claimenddt'] = pd.to_datetime(df['inpatient_claimenddt'])
-    df['inpatient_admissiondt'] = pd.to_datetime(df['inpatient_admissiondt'])
-    df['inpatient_dischargedt'] = pd.to_datetime(df['inpatient_dischargedt'])
+    df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
+    df['claimenddt'] = pd.to_datetime(df['claimenddt'])
+    df['admissiondt'] = pd.to_datetime(df['admissiondt'])
+    df['dischargedt'] = pd.to_datetime(df['dischargedt'])
     return df
 
 # ======================================================================================
@@ -448,10 +425,10 @@ def create_features_outpatient(df):
     DataFrame: The outpatient dataframe with the new features.
     """
     # Convert the date columns to datetime objects
-    df['outpatient_claimstartdt'] = pd.to_datetime(df['outpatient_claimstartdt'])
-    df['outpatient_claimenddt'] = pd.to_datetime(df['outpatient_claimenddt'])
+    df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
+    df['claimenddt'] = pd.to_datetime(df['claimenddt'])
     # Calculate the Claim Duration
-    df['outpatient_claimduration'] = (df['outpatient_claimenddt'] - df['outpatient_claimstartdt']).dt.days
+    df['claimduration'] = (df['claimenddt'] - df['claimstartdt']).dt.days
     return df
 
 # ======================================================================================
@@ -473,5 +450,16 @@ def create_chronic_disease_count_feature_beneficiary(df):
 
 # ======================================================================================
 
+def merge_inpatient_fraud(beneficiary, inpatient, fraud):
+    df = pd.merge(beneficiary, inpatient, on='beneid')
+    df = pd.merge(inpatient, fraud, on='provider')
+    df = df.dropna(subset=['potentialfraud'])
+    return df 
 
 # ======================================================================================
+
+def merge_outpatient_fraud(beneficiary, outpatient, fraud):
+    df = pd.merge(beneficiary, outpatient, on='beneid')
+    df = pd.merge(outpatient, fraud, on='provider')
+    df = df.dropna(subset=['potentialfraud'])
+    return df 
