@@ -1,12 +1,14 @@
-# Import numpy for numerical operations
-import pandas as pd
-# Import Pandas for data manipulation
-import numpy as np
-# Import Matplotlib for data visualization
-import matplotlib.pyplot as plt
-# Import seaborn for data visualization
-import seaborn as sns
-
+##########################################################################
+# Import numpy for numerical operations                                  #
+import pandas as pd                                                      #          
+# Import Pandas for data manipulation                                    # 
+import numpy as np                                                       #     
+# Import Matplotlib for data visualization                               #
+import matplotlib.pyplot as plt                                          #
+# Import seaborn for data visualization                                  #
+import seaborn as sns                                                    #    
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder            #
+##########################################################################
 def acquire_test_data():
     """
     Load test datasets including outpatient, inpatient, beneficiary, and main test data.
@@ -20,6 +22,7 @@ def acquire_test_data():
     test_beneficiary_df = pd.read_csv('Test_Beneficiarydata.csv')
     test_df = pd.read_csv('Test.csv')
     return test_outpatient_df, test_inpatient_df, test_beneficiary_df, test_df
+# ======================================================================================
 
 def acquire_train_data():
     """
@@ -34,6 +37,7 @@ def acquire_train_data():
     train_df = pd.read_csv('Train.csv')
     return train_outpatient_df, train_inpatient_df, train_beneficiary_df, train_df
 
+# ======================================================================================
 
 def DataFrame_shape(train, test, new_df):
     """
@@ -109,14 +113,11 @@ def beneficiary_OneHotLabel_encode(df):
     # Join the one-hot encoded dataframe with the original dataframe
     df = df.join(encoder_df)
 
-    # Rename the one-hot encoded columns for clarity
-    df = df.rename(columns={0: 'race_0'})
-    df = df.rename(columns={1: 'race_1'})
-    df = df.rename(columns={2: 'race_2'})
-    df = df.rename(columns={3: 'race_3'})
-
+    columns_to_rename = {0: 'race_0', 1: 'race_1', 2: 'race_2', 3: 'race_3'}
+    for old_col, new_col in columns_to_rename.items():
+        df = df.rename(columns={old_col: new_col})
+        df[new_col] = df[new_col].astype(int)
     return df
-
 
 # ======================================================================================
 
@@ -201,11 +202,9 @@ def wrangle_inpatient(df):
     df['deductibleamtpaid'] = df['deductibleamtpaid'].fillna(1068)
 
     # rename columns clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 as clmprocedurecode_1,clmprocedurecode_2,clmprocedurecode_3 in the format clmprocedurecode_i_1 where i denotes inpatient
-    df = df.rename(columns={'clmprocedurecode_1':'clmprocedurecode_i_1','clmprocedurecode_2':'clmprocedurecode_i_2','clmprocedurecode_3':'clmprocedurecode_i_3'})
-
-    # rename columns clmdiagnosiscode_1 to clmdiagnosiscode_10 in the format clmdiagnosiscode_i_1 where i denotes inpatient
-    for i in range(1,11):
-        df = df.rename(columns={f'clmdiagnosiscode_{i}':f'clmdiagnosiscode_i_{i}'})
+    df = df.rename(columns={'clmprocedurecode_1':'clmprocedurecode_1','clmprocedurecode_2':'clmprocedurecode_2','clmprocedurecode_3':'clmprocedurecode_3'})
+    
+    
     return df
 
 # ======================================================================================
@@ -242,19 +241,29 @@ def wrangle_outpatient(df):
         df[f'clmdiagnosiscode_{i}'] = df[f'clmdiagnosiscode_{i}'].fillna('00000')
 
 
+   
     # ClmAdmitDiagnosisCode impute it with '00000' as 79% of the values are null
     df['clmadmitdiagnosiscode'] = df['clmadmitdiagnosiscode'].fillna('00000')
    # rename columns clmprocedurecode_1 to clmprocedurecode_6 as  in the format clmprocedurecode_i_1 where i denotes inpatient
    # for i in range(1,7):
    #     df = df.rename(columns={f'clmprocedurecode_{i}':f'clmprocedurecode_i_{i}'})
-
-    # rename columns clmdiagnosiscode_1 to clmdiagnosiscode_6 in the format clmdiagnosiscode_i_1 where i denotes inpatient
-    for i in range(1,7):
-        df = df.rename(columns={f'clmdiagnosiscode_{i}':f'clmdiagnosiscode_i_{i}'})
+   
     return df
 
 
 # ======================================================================================
+
+def wrangle_fraud(df):
+    df.columns = df.columns.str.replace(' ', '_')
+    df.columns = df.columns.str.lower()
+    
+    # Drop rows where 'potentialfraud' column has NaN values
+    df = df.dropna(subset=['potentialfraud'])
+    
+    return df
+
+# ======================================================================================
+
 
 def summarize_outliers(df, k=1.5) -> None:
     '''
@@ -498,13 +507,12 @@ def create_features_outpatient(df):
     Returns:
     DataFrame: The outpatient dataframe with the new features.
     """
-    # Convert the date columns to datetime objects
+     # Convert the date columns to datetime objects
     df['claimstartdt'] = pd.to_datetime(df['claimstartdt'])
     df['claimenddt'] = pd.to_datetime(df['claimenddt'])
     # Calculate the Claim Duration
     df['claimduration'] = (df['claimenddt'] - df['claimstartdt']).dt.days
     return df
-
 # ======================================================================================
 
 # function to create a new feature "ChronicDiseaseCount" from the "ChronicCond" features for beneficiary dataframe
@@ -523,6 +531,17 @@ def create_chronic_disease_count_feature_beneficiary(df):
     return df
 
 # ======================================================================================
+def merge_inpatient_fraud(beneficiary, inpatient, fraud):
+    df = pd.merge(beneficiary, inpatient, on='beneid')
+    df = pd.merge(inpatient, fraud, on='provider')
+    df = df.dropna(subset=['potentialfraud'])
+    return df 
 
+# ======================================================================================
+def merge_outpatient_fraud(beneficiary, outpatient, fraud):
+    df = pd.merge(beneficiary, outpatient, on='beneid')
+    df = pd.merge(outpatient, fraud, on='provider')
+    df = df.dropna(subset=['potentialfraud'])
+    return df 
 
 # ======================================================================================
