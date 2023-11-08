@@ -12,7 +12,7 @@
 ## **Project Goal** 
 
 ###  The main goals of the project are
-  - &#9733; Develop an ML model for healthcare fraud detection
+  - &#9733; Use a classification ML model for healthcare fraud detection
   - &#9733; Identify key drivers of healthcare fraud
   - &#9733; Improve fraud detection accuracy
   - &#9733; Provide insights into healthcare fraud variations
@@ -24,7 +24,7 @@
 
 ## **Initial Thoughts**
 
-###    In the initial phases of the project, data collection and preprocessing are paramount, ensuring the availability of high-quality healthcare data for analysis. This foundational stage lays the groundwork for harnessing data effectively in predicting healthcare fraud.
+###    In the initial phases of the project, data collection and preprocessing are paramount, ensuring the availability of high-quality healthcare data for analysis. This foundational stage lays the groundwork for harnessing data effectively in predicting healthcare fraud. We belive that inpatients claims have a higher likelyhood of being fraudulent. 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -43,17 +43,18 @@
 - &#9733; List of deliverables:
      - &#9642; Final Report
      - &#9642; Slide Show
-     - &#9642; Front end application Link
+     - &#9642; Front end link to dashboard
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## **Modeling **
 
 - &#9733; List of models:
-     - &#9642; Model1
-     - &#9642; Model2
-     - &#9642; Model3
+     - &#9642; Decision Tree
+     - &#9642; Random Forest 
+     - &#9642; KNearest Neighbor
+     - &#9642; Logistic Regression 
 - &#9733; Best model:
-     - &#9642; Best Model
+     - &#9642; TBD
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -107,10 +108,7 @@
 
 | Column Name               | Dtype           | Definition                                            |
 |---------------------------|-----------------|-------------------------------------------------------|
-| **BeneID**                | object          | Beneficiary ID                                        |
 | **ClaimID**               | object          | Claim ID                                              |
-| **ClaimStartDt**          | object          | Start date of the claim                               |
-| **ClaimEndDt**            | object          | End date of the claim                                 |
 | **Provider**              | object          | Healthcare provider's ID                              |
 | **InscClaimAmtReimbursed**| int64           | Amount reimbursed by insurance for the claim         |
 | **AttendingPhysician**    | object          | Attending physician for the claim                     |
@@ -119,7 +117,6 @@
 | **AdmissionDt**           | object          | Date of admission                                     |
 | **ClmAdmitDiagnosisCode** | object          | Diagnosis code for admission                          |
 | **DeductibleAmtPaid**     | float64         | Amount paid as deductible                             |
-| **DischargeDt**           | object          | Date of discharge                                     |
 | **DiagnosisGroupCode**    | object          | Group code for diagnoses                              |
 | **ClmDiagnosisCode_1**    | object          | Diagnosis code 1 for the claim                        |
 | **ClmDiagnosisCode_2**    | object          | Diagnosis code 2 for the claim                        |
@@ -149,8 +146,8 @@
      2. Acquire the data from [kaggle](https://www.kaggle.com/datasets/rohitrox/healthcare-provider-fraud-detection-analysis?select=Train_Beneficiarydata-1542865627584.csv)
      3. Run data preprocessing and feature engineering scripts.
      4. Explore data using provided notebooks.
-     5. Train and evaluate regression models using the provided notebook.
-     6. Replicate the property tax assessment process using the provided instructions.
+     5. Train and evaluate classification models using the provided notebook.
+     6. Replicate the potential fraud assessment process using the provided instructions.
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -167,5 +164,5 @@
 
 
 ## **Takeaways and Conclusions**
-In conclusion, our analysis has unveiled essential insights into healthcare provider fraud . The adoption of a data-driven approach not only ensures more precise quality assessments but also empowers medicare with data-backed decisions.
+In conclusion, we are able to predict provider fraud for both inpatient and outpatient claims. Our analysis has unveiled essential insights into healthcare provider fraud. The adoption of a data-driven approach not only ensures more precise quality assessments but also empowers medicare with data-backed decisions.
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
