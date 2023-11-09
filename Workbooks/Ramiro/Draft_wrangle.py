@@ -182,6 +182,19 @@ def wrangle_outpatient(df):
 
 # ======================================================================================
 
+def wrangle_fraud(df):
+    df.columns = df.columns.str.replace(' ', '_')
+    df.columns = df.columns.str.lower()
+    
+    # Drop rows where 'potentialfraud' column has NaN values
+    df = df.dropna(subset=['potentialfraud'])
+    
+    # Encode 'potentialfraud'
+    df['potentialfraud_encoded'] = df['potentialfraud'].map({'Yes': 1, 'No': 0})
+    return df
+
+# ======================================================================================
+
 def summarize_outliers(df, k=1.5) -> None:
     '''
     Summarize will take in a pandas DataFrame
@@ -455,6 +468,7 @@ def merge_inpatient_fraud(beneficiary, inpatient, fraud):
     df = df.join(fraud.set_index('provider'), on='provider', how='left')
     df = df.dropna(subset=['potentialfraud'])
     df.reset_index(inplace = True, drop = True)
+    df['potentialfraud_encoded'] =  df['potentialfraud_encoded'].astype(int)
     return df
 
 # ======================================================================================
@@ -464,4 +478,5 @@ def merge_outpatient_fraud(beneficiary, outpatient, fraud):
     df = df.join(fraud.set_index('provider'), on='provider', how='left')
     df = df.dropna(subset=['potentialfraud'])
     df.reset_index(inplace = True, drop = True)
+    df['potentialfraud_encoded'] =  df['potentialfraud_encoded'].astype(int)
     return df 
