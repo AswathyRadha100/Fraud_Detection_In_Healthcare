@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt                                          #
 # Import seaborn for data visualization                                  #
 import seaborn as sns                                                    #    
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder            #
+from sklearn.model_selection import train_test_split                     #
 ##########################################################################
 def acquire_test_data():
     """
@@ -410,31 +411,11 @@ def get_continuous_feats(df) -> list:
 
 # ======================================================================================
 
-def split_data(df, target=None) -> tuple:
-    """
-    Split a DataFrame into training, validation, and test sets with optional stratification.
-
-    Args:
-    df (DataFrame): The DataFrame to split.
-    target (Series): Optional target variable for stratified splitting.
-
-    Returns:
-    train (DataFrame): Training data.
-    validate (DataFrame): Validation data.
-    test (DataFrame): Test data.
-    """
-    train_val, test = train_test_split(
-        df,
-        train_size=0.8,
-        random_state=1349,
-        stratify=target)
-    train, validate = train_test_split(
-        train_val,
-        train_size=0.7,
-        random_state=1349,
-        stratify=target)
+def split_data(df: pd.DataFrame) -> pd.DataFrame:
+    '''splits data into train test and validate dataframes'''
+    train, test = train_test_split(df, test_size=.15, random_state=117, stratify=df.potentialfraud)
+    train, validate = train_test_split(train, test_size=.15, random_state=117, stratify=train.potentialfraud)
     return train, validate, test
-
 # ======================================================================================
 
 def display_numeric_column_histograms(data_frame):
@@ -449,7 +430,7 @@ def display_numeric_column_histograms(data_frame):
     """
     numeric_columns = data_frame.select_dtypes(exclude=["object", "category"]).columns.to_list()
     # Define any number of colors for the histogram bars
-    colors = ["#FFBF00"]
+    colors = ["#008080"]
     for i, column in enumerate(numeric_columns):
         # Create a histogram for each numeric column with two colors
         figure, axis = plt.subplots(figsize=(10, 3))
