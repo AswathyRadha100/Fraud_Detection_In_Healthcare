@@ -170,7 +170,6 @@
 | numphysicians                      |                                   | int64           | Number of physicians        |
 | potentialfraud                     | potentialfraud                      | int64           | Potential fraud indicator   |
 | potentialfraud_encoded             | potentialfraud_encoded               | int64           | Encoded potential fraud indicator  |
-| cluster                            | cluster                             | int64           | Cluster identifier         
 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
