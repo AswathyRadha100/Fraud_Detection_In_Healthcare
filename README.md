@@ -12,7 +12,7 @@
 ## **Project Goal** 
 
 ###  The main goals of the project are
-  - &#9733; Develop an ML model for healthcare fraud detection
+  - &#9733; Develop a ML model for healthcare fraud detection
   - &#9733; Identify key drivers of healthcare fraud
   - &#9733; Improve fraud detection accuracy
   - &#9733; Provide insights into healthcare fraud variations
@@ -51,6 +51,7 @@
      - &#9642; Decision Tree
      - &#9642; K Nearest Neighbours
      - &#9642; Linear Regression
+     - &#9642; Logistic Regression
 - &#9733; Best model for Inpatient dataset:
      - &#9642; Best Model is KNearest Neighbor
 - &#9733; Best model for Outpatient dataset:
@@ -65,10 +66,6 @@
      - &#9642; Created new binary feature for fraud or legitimate claim 
      - &#9642; Created new feature that shows Patient type 
      - &#9642; Created a new feature that indicates the Age 
-     - &#9642; Created a new feature that indicates the Claim diagnostic code
-     - &#9642; Created a new feature that indicates the Claim procedure code
-     - &#9642; Rename NoOfMonths_PartACov
-     - &#9642; Rename NoOfMonths_PartBCov   
 - &#9733; Explore data to uncover critical fraud indicators:
   -  Investigate data to identify key indicators of fraudulent activities
      - &#9642; What factors contribute to patient awareness of fraud attempts?
@@ -83,7 +80,7 @@
      - &#9642; KNN
      - &#9642; Decision Tree
      - &#9642; Logistic Regression
-     - &#9642; Polynomial Regression
+     - &#9642; Random Forest
      
 - &#9733; Data Splitting and Model Training:
   -  Divide the dataset into train, validate and test sets
@@ -200,5 +197,5 @@
 
 
 ## **Takeaways and Conclusions**
-In conclusion, our analysis has unveiled essential insights into healthcare provider fraud . The adoption of a data-driven approach not only ensures more precise quality assessments but also empowers medicare with data-backed decisions.
+In conclusion, our analysis has unveiled essential insights into healthcare provider fraud . The adoption of a data-driven approach not only ensures more precise quality assessments but also empowers medicare with data-backed decisions. With our current features we are able to more accurately predict inpatient than outpatient fraudulent claims.
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
