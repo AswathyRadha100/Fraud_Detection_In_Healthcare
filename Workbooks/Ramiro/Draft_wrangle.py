@@ -7,10 +7,17 @@ import matplotlib.pyplot as plt
 # Import seaborn for data visualization
 import seaborn as sns
 
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder # did not use OneHotEncoder 
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder 
+from sklearn.model_selection import train_test_split  
 
 
 def acquire_test_data():
+    '''
+    Load test datasets including outpatient, inpatient, beneficiary, and main test data.
+
+    Returns:
+    tuple: A tuple containing test_outpatient_df, test_inpatient_df, test_beneficiary_df, and test_df dataframes.
+    '''
     test_outpatient_df = pd.read_csv('Test_Outpatientdata.csv')
     test_inpatient_df = pd.read_csv('Test_Inpatientdata.csv')
     test_beneficiary_df = pd.read_csv('Test_Beneficiarydata.csv')
@@ -20,6 +27,12 @@ def acquire_test_data():
 # ======================================================================================
 
 def acquire_train_data():
+     """
+    Load train datasets including outpatient, inpatient, beneficiary, and main train data.
+
+    Returns:
+    tuple: A tuple containing train_outpatient_df, train_inpatient_df, train_beneficiary_df, and train_df dataframes.
+    """
     train_outpatient_df = pd.read_csv('Train_Outpatientdata.csv')
     train_inpatient_df = pd.read_csv('Train_Inpatientdata.csv')
     train_beneficiary_df = pd.read_csv('Train_Beneficiarydata.csv')
@@ -29,6 +42,17 @@ def acquire_train_data():
 # ======================================================================================
 
 def DataFrame_shape(train, test, new_df):
+    """
+    Calculate and print the number of rows in train, test, and a new dataframe.
+
+    Args:
+    train (DataFrame): The training dataframe.
+    test (DataFrame): The test dataframe.
+    new_df (DataFrame): The new dataframe to compare.
+
+    Returns:
+    None
+    """
     test_train_count = len(train) + len(test)
     print(f'Sum of both train and test -> {test_train_count}')
     print(f'Sum of new DataFrame -> {len(new_df)}')
@@ -37,7 +61,16 @@ def DataFrame_shape(train, test, new_df):
 # ======================================================================================
 
 def beneficiary_label_encode(df):
-	# make all columns lowercase 
+	"""
+    Apply label encoding to selected columns in the beneficiary dataframe.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to be label encoded.
+
+    Returns:
+    DataFrame: The dataframe with label encoded columns.
+    """
+    # Make all columns lowercase
     df.columns = df.columns.str.lower()
 
     # List of columns for label encoding 
@@ -59,6 +92,15 @@ def beneficiary_label_encode(df):
 # ======================================================================================
 
 def beneficiary_OneHotLabel_encode(df): 
+    """
+    Apply one-hot encoding to the 'race' column in the beneficiary dataframe.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to be encoded.
+
+    Returns:
+    DataFrame: The dataframe with one-hot encoded 'race' column.
+    """
     df.columns = df.columns.str.lower()
     encoder = OneHotEncoder(handle_unknown='ignore')
     encoder_df = pd.DataFrame(encoder.fit_transform(df[['race']]).toarray())
@@ -73,6 +115,24 @@ def beneficiary_OneHotLabel_encode(df):
 # ======================================================================================
 
 def prep_beneficiary_data(df):
+    """
+    Preprocess the beneficiary data by performing the following steps:
+    
+    1. Convert column names to lowercase.
+    2. Convert 'dod' and 'dob' columns to datetime objects.
+    3. Create a 'deceased' column indicating whether the beneficiary is deceased (1) or not (0).
+    4. Calculate the age of the beneficiary at a reference date.
+    5. Calculate the total reimbursed amount as the sum of inpatient and outpatient annual reimbursement amounts.
+    6. Calculate the total deductible amount as the sum of inpatient annual deductible amount and outpatient annual reimbursement amount.
+    7. Create new features 'dob_year', 'dob_month', and 'dob_day' based on the 'dob' column.
+    8. Drop the 'dob' and 'dod' columns.
+
+    Args:
+    df (DataFrame): The beneficiary dataframe to be preprocessed.
+
+    Returns:
+    DataFrame: The preprocessed beneficiary dataframe.
+    """
     df.columns = df.columns.str.lower()
     df['dod'] = pd.to_datetime(df['dod'])
     df['dob'] = pd.to_datetime(df['dob'])
@@ -183,6 +243,12 @@ def wrangle_outpatient(df):
 # ======================================================================================
 
 def wrangle_fraud(df):
+    '''
+    replace all empty space with an underscore
+    make all the column names lowercase
+    drop all NA for fraud
+    encode the target variable 
+    '''
     df.columns = df.columns.str.replace(' ', '_')
     df.columns = df.columns.str.lower()
     
@@ -338,7 +404,7 @@ def get_continuous_feats(df) -> list:
 
 # ======================================================================================
 
-def split_data(df, target=None) -> tuple:
+def split_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Split a DataFrame into training, validation, and test sets with optional stratification.
 
@@ -351,16 +417,8 @@ def split_data(df, target=None) -> tuple:
     validate (DataFrame): Validation data.
     test (DataFrame): Test data.
     """
-    train_val, test = train_test_split(
-        df,
-        train_size=0.8,
-        random_state=1349,
-        stratify=target)
-    train, validate = train_test_split(
-        train_val,
-        train_size=0.7,
-        random_state=1349,
-        stratify=target)
+    train, test = train_test_split(df, test_size=.15, random_state=117, stratify=df.potentialfraud)
+    train, validate = train_test_split(train, test_size=.15, random_state=117, stratify=train.potentialfraud)
     return train, validate, test
 
 # ======================================================================================
@@ -464,6 +522,10 @@ def create_chronic_disease_count_feature_beneficiary(df):
 # ======================================================================================
 
 def merge_inpatient_fraud(beneficiary, inpatient, fraud):
+    '''
+    join beneficiary, inpatient and fraud datasets together to 
+    create inpatent dataframe for exploration. 
+    '''
     df = beneficiary.join(inpatient.set_index('beneid'), on='beneid', how='left')
     df = df.join(fraud.set_index('provider'), on='provider', how='left')
     df = df.dropna(subset=['potentialfraud'])
@@ -474,6 +536,10 @@ def merge_inpatient_fraud(beneficiary, inpatient, fraud):
 # ======================================================================================
 
 def merge_outpatient_fraud(beneficiary, outpatient, fraud):
+    '''
+    join beneficiary, outpatient and fraud datasets together to 
+    create outpatent dataframe for exploration. 
+    '''
     df = beneficiary.join(outpatient.set_index('beneid'), on='beneid', how='left')
     df = df.join(fraud.set_index('provider'), on='provider', how='left')
     df = df.dropna(subset=['potentialfraud'])
